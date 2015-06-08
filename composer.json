@@ -16,7 +16,7 @@
         "ext-gmagick": "*",
         "behat/behat": "~3.0",
         "behat/mink-extension": "~2.0@dev",
-        "knplabs/gaufrette": "~0.2@dev"
+        "knplabs/gaufrette": "~0.1@dev"
     },
     "require-dev": {
         "behat/mink-selenium2-driver": "~1.0",
