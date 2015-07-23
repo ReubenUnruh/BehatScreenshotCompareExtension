@@ -56,41 +56,41 @@ class RawScreenshotCompareContext extends RawMinkContext implements ScreenshotCo
         if (!$sourceFilesystem->exists($compareFile)) {
             throw new FileNotFoundException(null, 0, null, $compareFile);
         }
+        
+        $this->saveScreenshot('test_' . $fileName, $screenshotDir);
+        $testFile = $screenshotDir . DIRECTORY_SEPARATOR . 'test_' . $fileName;
 
-        $actualScreenshot = new \Imagick();
-        $actualScreenshot->readImageBlob($session->getScreenshot());
-        $actualGeometry = $actualScreenshot->getImageGeometry();
+        // Crop the image according to the settings
+        // if (array_key_exists('crop', $configuration)) {
+            // $crop = $configuration['crop'];
+            // $cropWidth = $actualGeometry['width'] - $crop['right']- $crop['left'];
+            // $cropHeight = $actualGeometry['height'] - $crop['top'] - $crop['bottom'];
+            // $actualScreenshot->cropImage($cropWidth, $cropHeight,$crop['left'],$crop['top']);
 
-        //Crop the image according to the settings
-        if (array_key_exists('crop', $configuration)) {
-            $crop = $configuration['crop'];
-            $cropWidth = $actualGeometry['width'] - $crop['right']- $crop['left'];
-            $cropHeight = $actualGeometry['height'] - $crop['top'] - $crop['bottom'];
-            $actualScreenshot->cropImage($cropWidth, $cropHeight,$crop['left'],$crop['top']);
+            // Refresh geomerty information
+            // $actualGeometry = $actualScreenshot->getImageGeometry();
+        // }
+        
+        // $scenarioName = urlencode(str_replace(' ', '_', $event->getStep()->getParent()->getTitle()));
+        $diffFile = $screenshotDir . DIRECTORY_SEPARATOR . 'diff_' . $fileName;
 
-            //Refresh geomerty information
-            $actualGeometry = $actualScreenshot->getImageGeometry();
-        }
-
-        $compareScreenshot = new \Imagick($compareFile);
-        $compareGeometry = $compareScreenshot->getImageGeometry();
+        $cmd = 'compare -metric AE ' . $testFile . ' ' . $compareFile . ' ' . $diffFile . ' 2>&1';
+        
+        $result = shell_exec($cmd);
+        
+        // $compareScreenshot = new \Gmagick($compareFile);
+        // $compareGeometry = $compareScreenshot->getImageGeometry();
 
         //ImageMagick can only compare files which have the same size
-        if ($actualGeometry !== $compareGeometry) {
-            throw new \ImagickException(sprintf("Screenshots don't have an equal geometry. Should be %sx%s but is %sx%s", $compareGeometry['width'], $compareGeometry['height'], $actualGeometry['width'], $actualGeometry['height']));
-        }
+        // if ($actualGeometry !== $compareGeometry) {
+            // throw new \ImagickException(sprintf("Screenshots don't have an equal geometry. Should be %sx%s but is %sx%s", $compareGeometry['width'], $compareGeometry['height'], $actualGeometry['width'], $actualGeometry['height']));
+        // }
 
-        $result = $actualScreenshot->compareImages($compareScreenshot, \Imagick::METRIC_ROOTMEANSQUAREDERROR);
+        // $result = $actualScreenshot->compareImages($compareScreenshot, \Imagick::METRIC_ROOTMEANSQUAREDERROR);
 
-        if ($result[1] > 0) {
-            $diffFileName = sprintf('%s_%s.%s', $this->getMinkParameter('browser_name'), date('d-m-y-H-i-s'), 'png');
+        if ($result > 0) {
 
-            /** @var \Imagick $diffScreenshot */
-            $diffScreenshot = $result[0];
-            $diffScreenshot->setImageFormat("png");
-            $targetFilesystem->write($diffFileName, $diffScreenshot);
-
-            throw new \ImagickException(sprintf("Files are not equal. Diff saved to %s", $diffFileName));
+            throw new \Exception(sprintf("Files are not equal. Diff saved to %s", $diffFile));
         }
     }
 }
